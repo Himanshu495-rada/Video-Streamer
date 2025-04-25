@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Player</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f0f0f0;
+        min-height: 100vh;
+        box-sizing: border-box;
+      }
+
+      /* --- Home Page Styles --- */
+      #home-page {
+        display: block; /* Initially show home page */
+        max-width: 900px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      }
+
+      #video-list {
+        display: grid;
+        grid-template-columns: repeat(
+          auto-fill,
+          minmax(180px, 1fr)
+        ); /* Responsive grid */
+        gap: 20px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .video-item {
+        cursor: pointer;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .video-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .video-item img {
+        width: 100%;
+        height: 120px; /* Fixed height for posters */
+        object-fit: cover; /* Cover the area without distorting aspect ratio */
+        display: block;
+      }
+
+      .video-item h3 {
+        font-size: 1rem;
+        margin: 10px;
+        text-align: center;
+        color: #333;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* --- Player Page Styles --- */
+      #player-page {
+        display: none; /* Initially hide player page */
+        max-width: 900px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .video-container {
+        width: 100%;
+        background-color: #000; /* Black background for video area */
+        position: relative; /* Needed for fullscreen */
+      }
+
+      video {
+        width: 100%;
+        display: block;
+      }
+
+      .controls {
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background-color: #f8f9fa; /* Light background for controls */
+        border-top: 1px solid #e9ecef;
+        flex-wrap: wrap; /* Allow controls to wrap on small screens */
+      }
+
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        font-size: 1rem;
+        transition: background-color 0.3s ease;
+      }
+      /* Back button specific style */
+      #backBtn {
+        background-color: #6c757d; /* Secondary color */
+      }
+      #backBtn:hover {
+        background-color: #5a6268;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:active {
+        background-color: #004085;
+      }
+
+      .progress-bar-container {
+        flex-grow: 1; /* Take up available space */
+        height: 10px; /* Thicker progress bar */
+        background-color: #ddd;
+        cursor: pointer;
+        border-radius: 5px;
+        position: relative;
+        overflow: hidden; /* Hide overflow of the progress bar */
+      }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background-color: #28a745; /* Green for progress */
+        border-radius: 5px;
+        transition: width 0.1s linear; /* Smooth transition for progress update */
+      }
+      .time-display {
+        font-size: 0.9rem;
+        color: #333;
+        min-width: 80px; /* Prevent time display from jumping */
+        text-align: center;
+      }
+      /* Fullscreen button style */
+      #fullscreenBtn {
+        background-color: #17a2b8; /* Info color */
+      }
+      #fullscreenBtn:hover {
+        background-color: #138496;
+      }
+
+      /* Fullscreen mode styles */
+      .video-container:-webkit-full-screen {
+        width: 100%;
+        height: 100%;
+      }
+      .video-container:-moz-full-screen {
+        width: 100%;
+        height: 100%;
+      }
+      .video-container:-ms-fullscreen {
+        width: 100%;
+        height: 100%;
+      }
+      .video-container:fullscreen {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 600px) {
+        body {
+          padding: 10px;
+        }
+        #home-page,
+        #player-page {
+          padding: 10px;
+        }
+        #video-list {
+          gap: 10px;
+        }
+        .video-item img {
+          height: 100px;
+        }
+        .video-item h3 {
+          font-size: 0.9rem;
+          margin: 8px;
+        }
+        .controls {
+          flex-direction: column; /* Stack controls vertically on small screens */
+          gap: 10px;
+        }
+        button {
+          width: 100%; /* Full width buttons */
+        }
+        .progress-bar-container {
+          width: 100%; /* Full width progress bar */
+        }
+        .time-display {
+          min-width: 60px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="home-page">
+      <h2>Available Videos</h2>
+      <ul id="video-list">
+        <li>Loading videos...</li>
+      </ul>
+    </div>
+
+    <div id="player-page">
+      <button id="backBtn">Back to List</button>
+      <div class="video-container">
+        <video id="myVideo" playsinline></video>
+        <div class="controls">
+          <button id="playPauseBtn">Play</button>
+          <div class="progress-bar-container" id="progressBarContainer">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <span class="time-display" id="currentTime">0:00</span> /
+          <span class="time-display" id="duration">--:--</span>
+          <button id="fullscreenBtn">Fullscreen</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- DOM Elements ---
+      const homePage = document.getElementById("home-page");
+      const playerPage = document.getElementById("player-page");
+      const videoList = document.getElementById("video-list");
+      const video = document.getElementById("myVideo");
+      const playPauseBtn = document.getElementById("playPauseBtn");
+      const progressBarContainer = document.getElementById(
+        "progressBarContainer"
+      );
+      const progressBar = document.getElementById("progressBar");
+      const currentTimeSpan = document.getElementById("currentTime");
+      const durationSpan = document.getElementById("duration");
+      const backBtn = document.getElementById("backBtn");
+      const fullscreenBtn = document.getElementById("fullscreenBtn");
+      const videoContainer = document.querySelector(".video-container"); // Get the container for fullscreen
+
+      let currentVideoFilename = null; // Variable to store the filename of the currently playing video
+
+      // --- Navigation Functions ---
+      function showHomePage() {
+        homePage.style.display = "block";
+        playerPage.style.display = "none";
+        // Pause and reset video when leaving player page
+        video.pause();
+        video.currentTime = 0;
+        video.src = ""; // Clear video source
+        // Reset duration display
+        currentTimeSpan.textContent = "0:00";
+        durationSpan.textContent = "--:--";
+        progressBar.style.width = "0%";
+      }
+
+      function showPlayerPage(filename) {
+        homePage.style.display = "none";
+        playerPage.style.display = "block";
+        currentVideoFilename = filename; // Set the current video filename
+        loadAndPlayVideo(filename); // Load and play the selected video
+      }
+
+      // --- Video Loading and Playback ---
+      async function loadAndPlayVideo(filename) {
+        // Reset player state before loading new video
+        video.currentTime = 0;
+        video.src = "";
+        playPauseBtn.textContent = "Play";
+        currentTimeSpan.textContent = "0:00";
+        durationSpan.textContent = "--:--";
+        progressBar.style.width = "0%";
+
+        // Fetch duration first for accurate progress bar
+        await fetchVideoDuration(filename);
+
+        // Set the video source. The browser will handle fetching chunks via range requests.
+        video.src = `http://htsingh200.hopto.org/video/${filename}`;
+
+        // Attempt to play the video automatically (might be blocked by browser policies)
+        video.play().catch((error) => {
+          console.warn("Autoplay prevented:", error);
+          // Show play button if autoplay is blocked
+          playPauseBtn.textContent = "Play";
+        });
+      }
+
+      // --- Fetch Video Duration ---
+      async function fetchVideoDuration(filename) {
+        try {
+          const response = await fetch(
+            `http://htsingh200.hopto.org/video_info/${filename}`
+          );
+          if (!response.ok) {
+            // Check for specific 404 error from the server
+            if (response.status === 404) {
+              const errorData = await response.json();
+              console.error("Server Error:", errorData.error);
+              durationSpan.textContent = "File Not Found";
+              // Optionally display a message to the user that the file needs conversion
+              alert(
+                `Error: ${errorData.error}\nPlease ensure the original video has been converted.`
+              );
+            } else {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return; // Stop execution if there was an error
+          }
+          const data = await response.json();
+          if (data.duration !== undefined) {
+            // Set the duration on the video element and display it
+            video.duration = data.duration; // This helps the progress bar
+            durationSpan.textContent = formatTime(data.duration);
+            // Store fetched duration to avoid overwriting by loadedmetadata if it's faster
+            durationSpan.dataset.fetchedDuration = data.duration;
+          } else {
+            durationSpan.textContent = "N/A";
+            console.error("Failed to get duration from server:", data.error);
+          }
+        } catch (error) {
+          console.error("Error fetching video duration:", error);
+          durationSpan.textContent = "Error";
+        }
+      }
+
+      // --- Home Page Video List Loading ---
+      async function loadVideoList() {
+        try {
+          const response = await fetch("videos.json");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const videos = await response.json();
+
+          videoList.innerHTML = ""; // Clear the "Loading videos..." message
+
+          if (videos.length === 0) {
+            videoList.innerHTML = "<li>No videos available.</li>";
+            return;
+          }
+
+          videos.forEach((videoItem) => {
+            const li = document.createElement("li");
+            li.classList.add("video-item");
+            // Use data attributes to store video information
+            li.dataset.filename = videoItem.filename;
+
+            li.innerHTML = `
+                      <img src="${videoItem.poster}" alt="${videoItem.title} Poster" onerror="this.onerror=null;this.src='https://placehold.co/180x120/cccccc/333333?text=No+Poster';">
+                      <h3>${videoItem.title}</h3>
+                  `;
+
+            // Add click event listener to each video item
+            li.addEventListener("click", () => {
+              showPlayerPage(videoItem.filename);
+            });
+
+            videoList.appendChild(li);
+          });
+        } catch (error) {
+          console.error("Error loading video list:", error);
+          videoList.innerHTML = "<li>Error loading video list.</li>";
+        }
+      }
+
+      // Load the video list when the page loads
+      loadVideoList();
+
+      // --- Video Player Event Listeners ---
+
+      // Update progress bar and current time display as the video plays
+      video.addEventListener("timeupdate", () => {
+        // Use video.duration which should be available from fetchVideoDuration or loadedmetadata
+        if (!isNaN(video.duration) && video.duration > 0) {
+          const percentage = (video.currentTime / video.duration) * 100;
+          progressBar.style.width = percentage + "%";
+          currentTimeSpan.textContent = formatTime(video.currentTime);
+        } else {
+          // Handle cases where duration is not yet available or is 0
+          currentTimeSpan.textContent = formatTime(video.currentTime);
+        }
+      });
+
+      // Fallback/confirmation for duration if loadedmetadata fires after fetch
+      video.addEventListener("loadedmetadata", () => {
+        if (!isNaN(video.duration) && video.duration > 0) {
+          // Only update if the fetched duration wasn't already set or is different
+          if (
+            durationSpan.dataset.fetchedDuration === undefined ||
+            parseFloat(durationSpan.dataset.fetchedDuration) !== video.duration
+          ) {
+            durationSpan.textContent = formatTime(video.duration);
+            durationSpan.dataset.fetchedDuration = video.duration; // Store the duration
+          }
+        }
+      });
+
+      // Toggle play/pause when the button is clicked
+      playPauseBtn.addEventListener("click", () => {
+        if (video.paused || video.ended) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      });
+
+      // Update button text based on video state
+      video.addEventListener("play", () => {
+        playPauseBtn.textContent = "Pause";
+      });
+      video.addEventListener("pause", () => {
+        playPauseBtn.textContent = "Play";
+      });
+      video.addEventListener("ended", () => {
+        playPauseBtn.textContent = "Play";
+      });
+
+      // Handle seeking when the progress bar container is clicked
+      progressBarContainer.addEventListener("click", (e) => {
+        // Use video.duration which should now be available
+        if (!isNaN(video.duration) && video.duration > 0) {
+          const containerRect = progressBarContainer.getBoundingClientRect();
+          const clickPosition = e.clientX - containerRect.left;
+          const percentage = clickPosition / containerRect.width;
+          const newTime = video.duration * percentage;
+
+          // Setting video.currentTime triggers the browser to seek.
+          // Since the backend is serving MP4, the browser's native range request
+          //# handling will work correctly for chunked loading and seeking.
+          video.currentTime = newTime;
+        }
+      });
+
+      // Back button listener
+      backBtn.addEventListener("click", () => {
+        showHomePage();
+      });
+
+      // --- Fullscreen Functionality ---
+      fullscreenBtn.addEventListener("click", () => {
+        if (document.fullscreenElement) {
+          // If already in fullscreen, exit fullscreen
+          document.exitFullscreen().catch((err) => {
+            console.error("Error exiting fullscreen:", err);
+          });
+        } else {
+          // If not in fullscreen, request fullscreen for the video container
+          if (videoContainer.requestFullscreen) {
+            videoContainer.requestFullscreen().catch((err) => {
+              console.error("Error entering fullscreen:", err);
+            });
+          } else if (videoContainer.mozRequestFullScreen) {
+            /* Firefox */
+            videoContainer.mozRequestFullScreen().catch((err) => {
+              console.error("Error entering fullscreen (Firefox):", err);
+            });
+          } else if (videoContainer.webkitRequestFullscreen) {
+            /* Chrome, Safari and Opera */
+            videoContainer.webkitRequestFullscreen().catch((err) => {
+              console.error("Error entering fullscreen (Webkit):", err);
+            });
+          } else if (videoContainer.msRequestFullscreen) {
+            /* IE/Edge */
+            videoContainer.msRequestFullscreen().catch((err) => {
+              console.error("Error entering fullscreen (MS):", err);
+            });
+          }
+        }
+      });
+
+      // Optional: Listen for fullscreen change events to update UI if needed
+      document.addEventListener("fullscreenchange", () => {
+        // You could update the fullscreen button icon or text here if desired
+        // For example: fullscreenBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+      });
+
+      // --- Helper Function ---
+
+      // Formats time from seconds into MM:SS format
+      function formatTime(time) {
+        if (isNaN(time) || time === null) return "--:--"; // Handle cases where time is not a number or null
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+      }
+
+      // --- Initial Load ---
+      // Check if a video filename is provided in the URL hash (e.g., #video=SampleVideo1.mp4)
+      // This allows linking directly to a video player page if needed, although
+      // the primary navigation is now handled by clicking list items.
+      // For this setup, we'll primarily use the list click.
+      // If you wanted direct linking, you'd parse window.location.hash here.
+      // For simplicity in this example, the page always starts on the home page.
+    </script>
+  </body>
+</html>
