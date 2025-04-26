@@ -6,7 +6,7 @@ CONVERTED_DIR = 'C:\\Users\\himan\\Videos\\Music videos'
 # Path to the output JSON file
 OUTPUT_JSON_FILE = './videos.json'
 # Base path for poster images (relative to the static directory served by Flask)
-POSTER_BASE_PATH = '/static/posters/'
+POSTER_BASE_PATH = './static/posters/'
 # Default poster image filename if a specific one doesn't exist (optional)
 # You might want to create a default_poster.jpg in your static/posters directory
 DEFAULT_POSTER = 'poster.jpg'
